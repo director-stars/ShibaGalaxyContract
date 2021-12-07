@@ -11,6 +11,7 @@ interface ICryptoShibaNFT{
         uint256 _tribe,
         uint256 _exp,
         uint256 _dna,
+        uint256 _classInfo,
         uint256 _farmTime,
         uint256 _bornTime
     );
@@ -23,7 +24,7 @@ interface ICryptoShibaNFT{
     function tokenOfOwnerByIndex(address _owner, uint256 index) external view returns(uint256);
     function layShiba(address receiver, uint8[] memory tribe) external;
     function priceShiba() external returns(uint256);
-    function evolve(uint256 _tokenId, address _owner, uint256 _dna) external;
+    function evolve(uint256 _tokenId, address _owner, uint256 _dna, uint256[6] memory classes) external;
     function getRare(uint256 _tokenId) external view returns(uint256);
     function exp(uint256 _tokenId, uint256 rewardExp) external;
     function shibaLevel(uint256 _tokenId) external view returns(uint256);
@@ -40,4 +41,5 @@ interface ICryptoShibaNFT{
     function totalSupply() external view returns(uint256);
     function getClaimTokenAmount(address _address) external view returns(uint256);
     function updateClaimTokenAmount(address _address, uint256 _newAmount) external;
+    function updateTotalClaimTokenAmount(address _address, uint256 _amount) external;
 }

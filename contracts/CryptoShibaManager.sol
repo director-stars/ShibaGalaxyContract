@@ -21,7 +21,6 @@ contract CryptoShibaManager is Ownable{
     uint256 public feeMarketRatePercent;
     uint256 public feeMarketRate;
     uint256 public feeChangeTribe;
-    // uint256 public loseRate;
     uint256 public feeEvolve;
     uint256 public ownableMaxSize;
     uint256 public referralRate;
@@ -31,15 +30,14 @@ contract CryptoShibaManager is Ownable{
 
     constructor () {
         feeAddress = address(0x67926b0C4753c42b31289C035F8A656D800cD9e7);
-        // priceShiba = 9999000000000000000000;
-        priceShiba = 9999;
+        priceShiba = 200000000000000000;
         feeMarketRate = 5;
         feeMarketRatePercent = 100;
         ownableMaxSize = 5;
         referralRate = 10;
         referralRatePercent = 100;
-        nftMaxSize = 6000;
-        priceStone = 1;
+        nftMaxSize = 8000;
+        priceStone = 800000000000000000;
     }
 
     function addBattlefields(address _address) public onlyOwner {
@@ -62,21 +60,9 @@ contract CryptoShibaManager is Ownable{
         farmOwners[_address] = true;
     }
 
-    // function timesBattle(uint256 level) public view returns (uint256){
-    //     return 0;
-    // }
-
-    // function timeLimitBattle() public view returns (uint256){
-    //     return 0;
-    // }
-
     function generation() public view returns (uint256){
         return 0;
     }
-
-    // function xBattle() public view returns (uint256){
-    //     return 0;
-    // }
 
     function setPriceShiba(uint256 newPrice) public onlyOwner {
         priceShiba = newPrice;
@@ -109,10 +95,6 @@ contract CryptoShibaManager is Ownable{
         assert(_nftMaxSize > 0);
         nftMaxSize = _nftMaxSize;
     }
-
-    // function setLoseRate(uint256 _loseRate) public onlyOwner {
-    //     loseRate = _loseRate;
-    // }
 
     function setFeeEvolve(uint256 _feeEvolve) public onlyOwner {
         feeEvolve = _feeEvolve;

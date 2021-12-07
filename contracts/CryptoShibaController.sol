@@ -10,6 +10,11 @@ import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "./ICryptoShibaNFT.sol";
 import "./ManagerInterface.sol";
 
+interface IUniswapV2Router02{
+  function getAmountsOut(uint256 _amount, address[] calldata path) external view returns (uint256[] memory);
+  function WETH() external pure returns (address);
+}
+
 contract CryptoShibaController is Ownable{
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
@@ -25,8 +30,10 @@ contract CryptoShibaController is Ownable{
 
     address public cryptoShibaNFT;
     address public token;
+    IUniswapV2Router02 public _uniswapV2Router;
+    address public busdTokenAddress;
 
-    mapping (uint256 => uint256) private classInfo;
+    // mapping (uint256 => uint256) private classInfo;
     uint256[6] public classes;
     uint256 public uncommonEstate;
     uint256 public rareEstate;
@@ -34,7 +41,7 @@ contract CryptoShibaController is Ownable{
     uint256 public epicEstate;
     uint256 public legendaryEstate;
     ManagerInterface manager;
-    event DNASet(uint256 _tokenId, uint256 _dna, uint256 _rare, uint256 _classInfo);
+    event DNASet(uint256 _tokenId, uint256 _dna);
 
     uint256 public cooldownTime = 14400;
     uint256 internal fightRandNonce = 0;
@@ -42,56 +49,62 @@ contract CryptoShibaController is Ownable{
 
     mapping (uint256 => uint256) public battleTime;
 
-    uint256 public randFightNumberFrom = 5;
-    uint256 public randFightNumberTo = 10;
-    uint256 public claimAmount;
+    // uint256 public randFightNumberFrom = 5;
+    // uint256 public randFightNumberTo = 10;
+    uint256 public claimPrice;
+    uint256 public claimPriceDecimal = 2;
     uint256 public claimTimeCycle;
-    mapping (uint256 => uint256) public setStoneTime;
-    mapping (uint256 => uint256) public stoneInfo;
-    mapping (uint256 => uint256) public autoFightMonsterInfo;
+    // mapping (uint256 => uint256) public autoFightMonsterInfo;
     mapping (address => uint256) public nextClaimTime;
-    event SetAutoFight(uint256 _tokenId, uint256 _monsterId);
+    uint256 public maxFightNumber = 3;
+    mapping (uint256 => uint256) public availableFightNumber;
+    // event SetAutoFight(uint256 _tokenId, uint256 _monsterId);
     event Fight(uint256 _tokenId, uint256 _totalRewardAmount, uint256 _totalRewardExp, uint256 _winNumber, uint256 _fightNumber);
 
     constructor (){
         // token = address(0x4A8D2D2ee71c65bC837997e79a45ee9bbd360d45);
-        token = address(0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56);
-        cryptoShibaNFT = address(0x100B112CC0328dB0746b4eE039803e4fDB96C34d);
+        // busdTokenAddress = address(0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56);
+        // IUniswapV2Router02 _uniswapV2Router = IUniswapV2Router02(0x10ED43C718714eb63d5aA57B78B54704E256024E); // Pancakeswap Router
+        token = address(0x4E01A14cfA1ae3C5e0507e126d9057E6f7979CaF);
+        cryptoShibaNFT = address(0xcF9ec47ED36CBB83eD2eBf632b9aA5b68efa054c);
+        busdTokenAddress = address(0xD1caDD2c2909351f37c8E75d66cC07deb3021601);
+        _uniswapV2Router = IUniswapV2Router02(0xf946634f04aa0eD1b935C8B876a0FD535F993D43); // Pancakeswap Router
+
         claimTimeCycle = 85400;
-        claimAmount = 1500;
-        classes[0] = 16;
-        classes[1] = 7;
-        classes[2] = 3;
-        classes[3] = 3;
-        classes[4] = 2;
-        classes[5] = 2;  
+        claimPrice = 1000;
+        classes[0] = 6;
+        classes[1] = 6;
+        classes[2] = 6;
+        classes[3] = 6;
+        classes[4] = 5;
+        classes[5] = 5;
 
         monsters[0] = Monster({
             _hp: 200, 
             _successRate: 80, 
-            _rewardTokenFrom: 15, 
-            _rewardTokenTo: 20, 
+            _rewardTokenFrom: 60000, 
+            _rewardTokenTo: 70000, 
             _rewardExpFrom: 2, 
             _rewardExpTo: 2});
         monsters[1] = Monster({
             _hp: 250, 
             _successRate: 70, 
-            _rewardTokenFrom: 27, 
-            _rewardTokenTo: 36, 
+            _rewardTokenFrom: 70000, 
+            _rewardTokenTo: 80000, 
             _rewardExpFrom: 6, 
             _rewardExpTo: 6});
         monsters[2] = Monster({
             _hp: 400, 
             _successRate: 50, 
-            _rewardTokenFrom: 33, 
-            _rewardTokenTo: 44, 
+            _rewardTokenFrom: 80000, 
+            _rewardTokenTo: 90000, 
             _rewardExpFrom: 8, 
             _rewardExpTo: 8});
         monsters[3] = Monster({
             _hp: 600, 
             _successRate: 30, 
-            _rewardTokenFrom: 39, 
-            _rewardTokenTo: 52, 
+            _rewardTokenFrom: 90000, 
+            _rewardTokenTo: 100000, 
             _rewardExpFrom: 12, 
             _rewardExpTo: 12});  
     }
@@ -102,7 +115,7 @@ contract CryptoShibaController is Ownable{
         cryptoShibaNFT = _nftAddress;
     }
 
-    function buyShiba(uint8[] memory tribe, address referral) public {
+    function buyShiba(uint8[] memory tribe, address referral) external payable {
         ICryptoShibaNFT cryptoShiba = ICryptoShibaNFT(cryptoShibaNFT);
         manager = ManagerInterface(cryptoShiba.manager());
         require(cryptoShiba.totalSupply() <= manager.nftMaxSize(), "Sold Out");
@@ -113,14 +126,22 @@ contract CryptoShibaController is Ownable{
         uint256 referralRatePercent = manager.referralRatePercent();
         uint256 referralReward = 0;
 
+        require(msg.value >= totalPriceShiba, "MAGICSTONENFT: confirmOffer: deposited BNB is less than NFT price." );
+
         if(firstPurchaseTime == 0 && referral != address(0)){
             cryptoShiba.setFirstPurchaseTime(_msgSender(), block.timestamp);
             referralReward = totalPriceShiba.mul(referralRate).div(referralRatePercent);
-            IERC20(token).safeTransferFrom(_msgSender(), referral, referralReward);
+            (bool success,) = payable(referral).call{value: referralReward}("");
+            require(success, "Failed to send BNB");
+            // IERC20(token).safeTransferFrom(_msgSender(), referral, referralReward);
         }
-        IERC20(token).safeTransferFrom(_msgSender(), manager.feeAddress(), totalPriceShiba.sub(referralReward));
+        (bool success,) = payable(manager.feeAddress()).call{value: totalPriceShiba.sub(referralReward)}("");
+        require(success, "Failed to send BNB");
+        // IERC20(token).safeTransferFrom(_msgSender(), manager.feeAddress(), totalPriceShiba.sub(referralReward));
         
         cryptoShiba.layShiba(_msgSender(), tribe);
+        uint256 lastTokenId = cryptoShiba.tokenOfOwnerByIndex(_msgSender(), cryptoShiba.balanceOf(_msgSender()).sub(1));
+        availableFightNumber[lastTokenId] = maxFightNumber;
     }
 
     function setDNA(uint256 tokenId) public {
@@ -129,25 +150,32 @@ contract CryptoShibaController is Ownable{
 
         uint256 randNonce = cryptoShiba.balanceOf(_msgSender());
         uint256 dna = uint256(keccak256(abi.encodePacked(block.timestamp, _msgSender(), randNonce))) % 10**30;
-        cryptoShiba.evolve(tokenId, _msgSender(), dna);
+        cryptoShiba.evolve(tokenId, _msgSender(), dna, classes);
 
-        uint256 shibaRare = cryptoShiba.getRare(tokenId);
-        classInfo[tokenId] = dna % classes[shibaRare.sub(1)];
-        emit DNASet(tokenId, dna, shibaRare, classInfo[tokenId]);
+        // uint256 shibaRare = cryptoShiba.getRare(tokenId);
+        // uint256 classInfo = dna % classes[shibaRare.sub(1)];
+
+        emit DNASet(tokenId, dna);
     }
 
     function setClasses(uint256 rare, uint256 classNumber) public {
         classes[rare.sub(1)] = classNumber;
     }
 
-    function getClassInfo(uint256 tokenId) public view returns(uint256){
-        return classInfo[tokenId];
-    }
+    // function getClassInfo(uint256 tokenId) public view returns(uint256){
+    //     return classInfo[tokenId];
+    // }
 
-    function fight(uint256 _tokenId, address _owner, uint256 monsterId, bool _final) public{
+    function fight(uint256 _tokenId, address _owner, uint256 monsterId) public{
         ICryptoShibaNFT myshiba = ICryptoShibaNFT(cryptoShibaNFT);
         require(myshiba.ownerOf(_tokenId) == _msgSender(), "not own");
-        require(battleTime[_tokenId] + cooldownTime < block.timestamp, 'not available for fighting');
+        if(block.timestamp.div(cooldownTime) == battleTime[_tokenId].div(cooldownTime)){
+            require(availableFightNumber[_tokenId] > 0, 'not available for fighting');
+            availableFightNumber[_tokenId] = availableFightNumber[_tokenId] - 1;
+        }
+        else{
+            availableFightNumber[_tokenId] = maxFightNumber - 1;
+        }
         uint256 level = myshiba.shibaLevel(_tokenId);
         uint256 rare = myshiba.getRare(_tokenId);
         
@@ -161,27 +189,54 @@ contract CryptoShibaController is Ownable{
         if(fightRandResult < updatedAttackVictoryProbability){
             _rewardTokenAmount = monsters[monsterId]._rewardTokenFrom + (fightRandResult % (monsters[monsterId]._rewardTokenTo - monsters[monsterId]._rewardTokenFrom + 1));
             _rewardExp = monsters[monsterId]._rewardExpFrom + (fightRandResult % (monsters[monsterId]._rewardExpTo - monsters[monsterId]._rewardExpFrom + 1));
-            newAmount = myshiba.getClaimTokenAmount(_owner) + (_rewardTokenAmount * 10**18);
+            newAmount = myshiba.getClaimTokenAmount(_owner) + (_rewardTokenAmount * 10 ** 9);
             myshiba.updateClaimTokenAmount(_owner, newAmount);
+            myshiba.updateTotalClaimTokenAmount(_owner, _rewardTokenAmount * 10 ** 9);
             myshiba.exp(_tokenId, _rewardExp);
             emit Fight(_tokenId, _rewardTokenAmount, _rewardExp, 1, 1);
         }
         else{
             emit Fight(_tokenId, _rewardTokenAmount, _rewardExp, 0, 1);
         }
-        if(_final){
+        // if(_final){
             battleTime[_tokenId] = block.timestamp;
-        }
+        // }
     }
 
     function claimToken() public{
         require(nextClaimTime[_msgSender()] < block.timestamp, "not claim now");
-        ICryptoShibaNFT myshiba = ICryptoShibaNFT(cryptoShibaNFT);
-        uint256 amount = (myshiba.getClaimTokenAmount(_msgSender()) > (claimAmount * 10**18))? (claimAmount * 10**18) : myshiba.getClaimTokenAmount(_msgSender());
+        ICryptoShibaNFT myshiba = ICryptoShibaNFT(cryptoShibaNFT);        
+        uint256 nftBalance = myshiba.balanceOf(_msgSender());
+        // uint256 maxClaimAmount = claimPrice.mul(1e18).div(priceCheck(token, busdTokenAddress, 1e18)).div(10**claimPriceDecimal).mul(nftBalance);
+        uint256 maxClaimAmount = priceCheck(busdTokenAddress, token, 1e18 * claimPrice / (10**claimPriceDecimal)).mul(nftBalance);
+        uint256 amount = (myshiba.getClaimTokenAmount(_msgSender()) > maxClaimAmount)? maxClaimAmount : myshiba.getClaimTokenAmount(_msgSender());
         require(IERC20(token).balanceOf(address(this)) > amount, "ended claim token");
         IERC20(token).safeTransfer(_msgSender(), amount);
         nextClaimTime[_msgSender()] = block.timestamp.add(claimTimeCycle);
         myshiba.updateClaimTokenAmount(_msgSender(), myshiba.getClaimTokenAmount(_msgSender()).sub(amount));
+    }
+
+    function priceCheck(address start, address end, uint256 _amount) public view returns (uint256) {
+        address wbnb = _uniswapV2Router.WETH();
+        if (_amount == 0) {
+        return 0;
+        }
+
+        address[] memory path;
+        if (start == wbnb) {
+        path = new address[](2);
+        path[0] = wbnb;
+        path[1] = end;
+        } else {
+        path = new address[](3);
+        path[0] = start;
+        path[1] = wbnb;
+        path[2] = end;
+        }
+
+        uint256[] memory amounts = _uniswapV2Router.getAmountsOut(_amount, path);
+        // [0x8f0528ce5ef7b51152a59745befdd91d97091d2f, 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c, 0x55d398326f99059fF775485246999027B3197955]
+        return amounts[amounts.length - 1];
     }
 
     function setMonster(uint32 _index, uint256 _hp, uint _successRate, uint256 _rewardTokenFrom, uint256 _rewardTokenTo, uint256 _rewardExpFrom, uint256 _rewardExpTo) public onlyOwner{
@@ -195,11 +250,11 @@ contract CryptoShibaController is Ownable{
         monsters[_index]._rewardExpTo = _rewardExpTo;
     }
 
-    function setRandFightNumber(uint256 _randFightNumberFrom, uint256 _randFightNumberTo) public{
-        assert(_randFightNumberTo >= randFightNumberFrom);
-        randFightNumberFrom = _randFightNumberFrom;
-        randFightNumberTo = _randFightNumberTo;
-    }
+    // function setRandFightNumber(uint256 _randFightNumberFrom, uint256 _randFightNumberTo) public{
+    //     assert(_randFightNumberTo >= randFightNumberFrom);
+    //     randFightNumberFrom = _randFightNumberFrom;
+    //     randFightNumberTo = _randFightNumberTo;
+    // }
 
     function withdraw(address _address, uint256 amount) public onlyOwner{
         IERC20(token).safeTransfer(_address, amount);
@@ -208,11 +263,15 @@ contract CryptoShibaController is Ownable{
         cooldownTime = _seconds;
     }
 
-    function setClaimAmount(uint256 _amount) public onlyOwner {
-        claimAmount = _amount;    
+    function setClaimPrice(uint256 _price) public onlyOwner {
+        claimPrice = _price;    
     }
 
     function setClaimTimeCycle(uint256 _newCycle) public onlyOwner {
         claimTimeCycle = _newCycle;
+    }
+
+    function setMaxFightNumber(uint256 _maxFightNumber) public onlyOwner {
+        maxFightNumber = _maxFightNumber;
     }
 }

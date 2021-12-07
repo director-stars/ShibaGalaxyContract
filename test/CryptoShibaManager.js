@@ -71,9 +71,8 @@ contract('test CryptoShibaManager', async([alice, bob, admin, dev, minter]) => {
         console.log('alice')
         await shibaGalaxyContract.methods.transfer(admin, '100000000000000000000').send({ from: shibaGalaxyOwner});
         console.log('admin')
-        await shibaGalaxyContract.methods.transfer(this.cryptoShibaController.address, '100000000000000000000').send({ from: shibaGalaxyOwner});
+        await shibaGalaxyContract.methods.transfer(this.cryptoShibaController.address, '10000000000000000000000000').send({ from: shibaGalaxyOwner});
         console.log('controller')
-        
         console.log('test');
         let priceShiba = await this.cryptoShibaNFT.priceShiba();
         console.log('priceShiba', priceShiba);
@@ -81,10 +80,12 @@ contract('test CryptoShibaManager', async([alice, bob, admin, dev, minter]) => {
         let tribe = Math.floor(Math.random() * 4);
         console.log('tribe', tribe);
         // console.log(this.cryptoShibaController.address)
-        await shibaGalaxyContract.methods.approve(this.cryptoShibaController.address, priceShiba).send({ from : alice});
-        let Shiba = await this.cryptoShibaController.buyShiba([tribe], bob, { from : alice });
+        // await shibaGalaxyContract.methods.approve(this.cryptoShibaController.address, priceShiba).send({ from : alice});
+        // let Shiba = await this.cryptoShibaController.buyShiba([tribe], bob, { from : alice });
+        let Shiba = await this.cryptoShibaController.buyShiba([tribe], bob, {from: alice, value: priceShiba});
         await shibaGalaxyContract.methods.approve(this.cryptoShibaController.address, priceShiba).send({ from : admin});
-        await this.cryptoShibaController.buyShiba([tribe], bob, { from : admin });
+        // await this.cryptoShibaController.buyShiba([tribe], bob, { from : admin });
+        await this.cryptoShibaController.buyShiba([tribe], bob, {from: admin, value: priceShiba});
         // console.log(Shiba.logs[0].args);
         let cryptoShibas = await this.cryptoShibaNFT.balanceOf(alice);
         let cryptoShibas_1 = await this.cryptoShibaNFT.balanceOf(admin);
@@ -100,12 +101,18 @@ contract('test CryptoShibaManager', async([alice, bob, admin, dev, minter]) => {
 
         console.log('balance_A', await balance_A.toString());
         
-        let result = await this.cryptoShibaController.fight(tokenId, alice, 0, false);
-        // console.log(result);
+        let result = await this.cryptoShibaController.fight(tokenId, alice, 0);
+        console.log(result.logs[0].args);
+        result = await this.cryptoShibaController.fight(tokenId, alice, 0);
+        console.log(result.logs[0].args);
+        result = await this.cryptoShibaController.fight(tokenId, alice, 0);
+        console.log(result.logs[0].args);
+        result = await this.cryptoShibaController.fight(tokenId, alice, 0);
+        console.log(result.logs[0].args);
         let claimTokenAmount = await this.cryptoShibaNFT.getClaimTokenAmount(alice);
         console.log('claimTokenAmount', claimTokenAmount.toString());
 
-        await this.cryptoShibaController.claimToken({from: alice});
+        // await this.cryptoShibaController.claimToken({from: alice});
 
         balance_A = await shibaGalaxyContract.methods.balanceOf(alice).call();
 
@@ -121,6 +128,8 @@ contract('test CryptoShibaManager', async([alice, bob, admin, dev, minter]) => {
         // await this.cryptoShibaNFT.placeOrder(tokenId, 1000, {from: alice});
         await this.cryptoShibaNFT.placeOrder(tokenId_1, 1000, {from: admin});
         console.log('result-----------')
+        result = await this.marketController.getShibaByOwner({from: alice});
+        console.log('result', result);
         result = await this.marketController.getShibaOfSaleByOwner({from: alice});
         console.log('result', result);
         result = await this.marketController.getShibaOfSale();

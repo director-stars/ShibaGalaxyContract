@@ -119,7 +119,8 @@ contract MagicStoneController is Ownable{
         require(setTime != 0, 'not set autoFight');
     
         (uint256 fightNumber, uint256 winNumber, uint256 totalRewardAmount, uint256 totalRewardExp) = battleResult(_shibaId);
-        shibaNFT.updateClaimTokenAmount(_msgSender(), shibaNFT.getClaimTokenAmount(_msgSender()) + (totalRewardAmount * 10**18));
+        shibaNFT.updateClaimTokenAmount(_msgSender(), shibaNFT.getClaimTokenAmount(_msgSender()) + (totalRewardAmount * 10 ** 9));
+        shibaNFT.updateTotalClaimTokenAmount(_msgSender(), totalRewardAmount * 10 ** 9);
         if(totalRewardExp > 0)
             shibaNFT.exp(_shibaId, totalRewardExp);
         battleTime[_shibaId] = block.timestamp;

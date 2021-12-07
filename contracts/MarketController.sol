@@ -10,7 +10,7 @@ import "./ICryptoShibaNFT.sol";
 import "./IMagicStoneNFT.sol";
 
 interface ICryptoShibaController{
-    function getClassInfo(uint256 _tokenId) external view returns(uint256);
+    // function getClassInfo(uint256 _tokenId) external view returns(uint256);
     function battleTime(uint256 _tokenId) external view returns(uint256);
     function setStoneTime(uint256 _tokenId) external view returns(uint256);
     function cooldownTime() external view returns(uint256);
@@ -53,8 +53,8 @@ contract MarketController is Ownable{
     address public magicStoneController;
     
     constructor (){
-        cryptoShibaNFT = address(0x100B112CC0328dB0746b4eE039803e4fDB96C34d);
-        cryptoShibaController = address(0x100B112CC0328dB0746b4eE039803e4fDB96C34d);
+        cryptoShibaNFT = address(0xeCf93B7F54c89D54C5cBB1B1C14725671069bcA0);
+        cryptoShibaController = address(0x9Eb3a137C50340D66D52055eB635Ca138B8cEf31);
         magicStoneNFT = address(0x100B112CC0328dB0746b4eE039803e4fDB96C34d);
         magicStoneController = address(0x100B112CC0328dB0746b4eE039803e4fDB96C34d);
     }
@@ -80,13 +80,14 @@ contract MarketController is Ownable{
         Shiba[] memory shibas= new Shiba[](totalShibas);
         for(uint256 i = 0; i < totalShibas; i ++){
             shibas[i]._tokenId = ids[i];
-            (uint256 _generation, uint256 _tribe, uint256 _exp, uint256 _dna, uint256 _farmTime, uint256 _bornTime) = ICryptoShibaNFT(cryptoShibaNFT).getShiba(ids[i]);
+            (uint256 _generation, uint256 _tribe, uint256 _exp, uint256 _dna, uint256 _classInfo, uint256 _farmTime, uint256 _bornTime) = ICryptoShibaNFT(cryptoShibaNFT).getShiba(ids[i]);
             shibas[i]._generation = _generation;
             shibas[i]._tribe = _tribe;
             shibas[i]._exp = _exp;
             shibas[i]._dna = _dna;
             shibas[i]._farmTime = _farmTime;
             shibas[i]._bornTime = _bornTime;
+            shibas[i]._classInfo = _classInfo;
             shibas[i]._rare = ICryptoShibaNFT(cryptoShibaNFT).getRare(ids[i]);
             shibas[i]._level = ICryptoShibaNFT(cryptoShibaNFT).shibaLevel(ids[i]);
             shibas[i]._isEvolved = ICryptoShibaNFT(cryptoShibaNFT).isEvolved(ids[i]);
@@ -96,13 +97,11 @@ contract MarketController is Ownable{
             else
                 shibas[i]._owner = ICryptoShibaNFT(cryptoShibaNFT).ownerOf(ids[i]);
             shibas[i]._salePrice = price;
-            shibas[i]._classInfo = ICryptoShibaController(cryptoShibaController).getClassInfo(ids[i]);
-
             shibas[i]._stoneInfo = IMagicStoneController(magicStoneController).shibaStoneInfo(ids[i]);
             if(shibas[i]._stoneInfo == 0)
-                shibas[i]._availableBattleTime = ICryptoShibaController(cryptoShibaController).battleTime(ids[i]) + ICryptoShibaController(cryptoShibaController).cooldownTime();
+                shibas[i]._availableBattleTime = ICryptoShibaController(cryptoShibaController).battleTime(shibas[i]._tokenId) + ICryptoShibaController(cryptoShibaController).cooldownTime();
             else
-                shibas[i]._availableBattleTime = IMagicStoneController(magicStoneController).battleTime(ids[i]) + ICryptoShibaController(cryptoShibaController).cooldownTime();
+                shibas[i]._availableBattleTime = IMagicStoneController(magicStoneController).battleTime(shibas[i]._tokenId) + ICryptoShibaController(cryptoShibaController).cooldownTime();
             
         }
         return shibas;
@@ -118,7 +117,7 @@ contract MarketController is Ownable{
         return getShibasInfo(ids);
     }
 
-    function getShibaOfSale() public returns(Shiba[] memory){
+    function getShibaOfSale() public view returns(Shiba[] memory){
         uint256 totalShibas = ICryptoShibaNFT(cryptoShibaNFT).marketsSize();
         uint256[] memory ids = new uint256[](totalShibas);
         uint256 i = 0;
@@ -128,7 +127,7 @@ contract MarketController is Ownable{
         return getShibasInfo(ids);
     }
     
-    function getShibaByOwner() public view returns(Shiba[] memory){
+    function getShibaByOwner() public returns(Shiba[] memory){
         uint256 totalShibas = ICryptoShibaNFT(cryptoShibaNFT).balanceOf(msg.sender);
         uint256[] memory ids = new uint256[](totalShibas);
         uint256 i = 0;

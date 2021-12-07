@@ -45,6 +45,7 @@ contract CryptoShibaNFT is ERC721 {
         Tribe tribe;
         uint256 exp;
         uint256 dna;
+        uint256 classInfo;
         uint256 farmTime;
         uint256 bornTime;
     }
@@ -65,6 +66,7 @@ contract CryptoShibaNFT is ERC721 {
     mapping(address => EnumerableSet.UintSet) private sellerTokens;
     mapping(address => uint256) public firstPurchaseTime;
     mapping (address => uint256) private claimTokenAmount;
+    mapping (address => uint256) private totalClaimTokenAmount;
 
     IERC20 public shibaERC20;
 
@@ -124,7 +126,8 @@ contract CryptoShibaNFT is ERC721 {
     function evolve(
         uint256 _tokenId,
         address _owner,
-        uint256 _dna
+        uint256 _dna,
+        uint256[6] memory _classes
     ) public onlySpawner {
         require(ownerOf(_tokenId) == _owner, "not own");
         CryptoShiba storage shiba = shibas[_tokenId];
@@ -133,6 +136,8 @@ contract CryptoShibaNFT is ERC721 {
         shiba.bornTime = block.timestamp;
         shiba.dna = _dna;
         isEvolved[_tokenId] = true;
+        uint256 rare = getRare(_tokenId);
+        shiba.classInfo = _dna % _classes[rare.sub(1)];
 
         emit Evolve(_tokenId, _dna);
     }
@@ -195,6 +200,7 @@ contract CryptoShibaNFT is ERC721 {
             tribe: tribe,
             exp: 0,
             dna: 0,
+            classInfo: 0,
             farmTime: 0,
             bornTime: block.timestamp
         });
@@ -383,5 +389,13 @@ contract CryptoShibaNFT is ERC721 {
 
     function updateClaimTokenAmount(address _address, uint256 _amount) public onlySpawner{
         claimTokenAmount[_address] = _amount;
+    }
+
+    function getTotalClaimTokenAmount(address _address) public view returns (uint256){
+        return totalClaimTokenAmount[_address];
+    }
+
+    function updateTotalClaimTokenAmount(address _address, uint256 _amount) public onlySpawner{
+        totalClaimTokenAmount[_address] = totalClaimTokenAmount[_address].add(_amount);
     }
 }
