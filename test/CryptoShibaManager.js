@@ -6,11 +6,11 @@ const CryptoShibaNFT = artifacts.require('CryptoShibaNFT')
 const MagicStoneNFT = artifacts.require('MagicStoneNFT')
 const MarketController = artifacts.require('MarketController')
 const ForceSend = artifacts.require('ForceSend');
-const shibaGalaxyABI = require('./abi/shibaGalaxy');
+const shibaGalaxyABI = require('./abi/busd');
 
-const shibaGalaxyAddress = '0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56';
+const shibaGalaxyAddress = '0x7420d2Bc1f8efB491D67Ee860DF1D35fe49ffb8C';
 const shibaGalaxyContract = new web3.eth.Contract(shibaGalaxyABI, shibaGalaxyAddress);
-const shibaGalaxyOwner = '0x8c7de13ecf6e92e249696defed7aa81e9c93931a';
+const shibaGalaxyOwner = '0x7E4228B666f2572259A0fc3061f396D9BBE2A99D';
 
 contract('test CryptoShibaManager', async([alice, bob, admin, dev, minter]) => {
 
@@ -67,11 +67,14 @@ contract('test CryptoShibaManager', async([alice, bob, admin, dev, minter]) => {
 
         console.log('balance of shibaGalaxyOwner: ', await shibaGalaxyContract.methods.balanceOf(shibaGalaxyOwner).call());
         
-        await shibaGalaxyContract.methods.transfer(alice, '100000000000000000000').send({ from: shibaGalaxyOwner});
+        await shibaGalaxyContract.methods.transfer(alice, '1000000000000').send({ from: shibaGalaxyOwner,gasPrice: 10000000000,
+            gas: 300000});
         console.log('alice')
-        await shibaGalaxyContract.methods.transfer(admin, '100000000000000000000').send({ from: shibaGalaxyOwner});
-        console.log('admin')
-        await shibaGalaxyContract.methods.transfer(this.cryptoShibaController.address, '10000000000000000000000000').send({ from: shibaGalaxyOwner});
+        // await shibaGalaxyContract.methods.transfer(admin, '100000000000000000000').send({ from: shibaGalaxyOwner});
+        // console.log('admin')
+        // await shibaGalaxyContract.methods.transfer(this.cryptoShibaController.address, '1000000000000000000').send({ from: shibaGalaxyOwner});
+        await shibaGalaxyContract.methods.transfer(this.cryptoShibaController.address, '1000000000000').send({ from: shibaGalaxyOwner,gasPrice: 10000000000,
+            gas: 300000});
         console.log('controller')
         console.log('test');
         let priceShiba = await this.cryptoShibaNFT.priceShiba();
@@ -83,8 +86,9 @@ contract('test CryptoShibaManager', async([alice, bob, admin, dev, minter]) => {
         // await shibaGalaxyContract.methods.approve(this.cryptoShibaController.address, priceShiba).send({ from : alice});
         // let Shiba = await this.cryptoShibaController.buyShiba([tribe], bob, { from : alice });
         let Shiba = await this.cryptoShibaController.buyShiba([tribe], bob, {from: alice, value: priceShiba});
-        await shibaGalaxyContract.methods.approve(this.cryptoShibaController.address, priceShiba).send({ from : admin});
+        // await shibaGalaxyContract.methods.approve(this.cryptoShibaController.address, priceShiba).send({ from : admin});
         // await this.cryptoShibaController.buyShiba([tribe], bob, { from : admin });
+        await this.cryptoShibaController.buyShiba([tribe], bob, {from: admin, value: priceShiba});
         await this.cryptoShibaController.buyShiba([tribe], bob, {from: admin, value: priceShiba});
         // console.log(Shiba.logs[0].args);
         let cryptoShibas = await this.cryptoShibaNFT.balanceOf(alice);
@@ -95,28 +99,53 @@ contract('test CryptoShibaManager', async([alice, bob, admin, dev, minter]) => {
         let tokenId_1 = await this.cryptoShibaNFT.tokenOfOwnerByIndex(admin, parseInt(cryptoShibas_1.toString())-1);
         await this.cryptoShibaController.setDNA(tokenId, { from : alice });
         await this.cryptoShibaController.setDNA(tokenId_1, { from : admin });
+        await this.cryptoShibaController.setDNA(tokenId_1-1, { from : admin });
         console.log(parseInt(tokenId.toString()));
+        console.log(parseInt(tokenId_1.toString()));
 
         let balance_A = await shibaGalaxyContract.methods.balanceOf(alice).call();
 
-        console.log('balance_A', await balance_A.toString());
+        console.log('alice - balance_A: ', await balance_A.toString());
+
+        balance_A = await shibaGalaxyContract.methods.balanceOf(admin).call();
+
+        console.log('admin - balance_A: ', balance_A.toString());
         
         let result = await this.cryptoShibaController.fight(tokenId, alice, 0);
-        console.log(result.logs[0].args);
-        result = await this.cryptoShibaController.fight(tokenId, alice, 0);
-        console.log(result.logs[0].args);
-        result = await this.cryptoShibaController.fight(tokenId, alice, 0);
-        console.log(result.logs[0].args);
-        result = await this.cryptoShibaController.fight(tokenId, alice, 0);
-        console.log(result.logs[0].args);
+        console.log('result.logs[0].args');
+        // result = await this.cryptoShibaController.fight(tokenId, alice, 0);
+        // console.log('result.logs[0].args');
+        result = await this.cryptoShibaController.fight(tokenId_1, admin, 0, { from : admin });
+        console.log('result.logs[0].args');
+        result = await this.cryptoShibaController.fight(tokenId_1, admin, 0, { from : admin });
+        console.log('result.logs[0].args');
+        result = await this.cryptoShibaController.fight(tokenId_1-1, admin, 0, { from : admin });
+        console.log('result.logs[0].args');
+        result = await this.cryptoShibaController.fight(tokenId_1-1, admin, 0, { from : admin });
+        console.log('result.logs[0].args');
         let claimTokenAmount = await this.cryptoShibaNFT.getClaimTokenAmount(alice);
-        console.log('claimTokenAmount', claimTokenAmount.toString());
+        console.log('alice - claimTokenAmount: ', claimTokenAmount.toString());
+        claimTokenAmount = await this.cryptoShibaNFT.getClaimTokenAmount(admin);
+        console.log('admin - claimTokenAmount: ', claimTokenAmount.toString());
 
-        // await this.cryptoShibaController.claimToken({from: alice});
+        await this.cryptoShibaController.claimToken({from: alice,gasPrice: 10000000000,
+            gas: 300000});
 
         balance_A = await shibaGalaxyContract.methods.balanceOf(alice).call();
 
-        console.log('balance_B', balance_A.toString());
+        console.log('alice - balance_B: ', balance_A.toString());
+
+        await this.cryptoShibaController.claimToken({from: admin,gasPrice: 10000000000,
+            gas: 300000});
+
+        balance_A = await shibaGalaxyContract.methods.balanceOf(admin).call();
+
+        console.log('admin - balance_B: ', balance_A.toString());
+
+        claimTokenAmount = await this.cryptoShibaNFT.getClaimTokenAmount(alice);
+        console.log('alice - claimTokenAmount: ', claimTokenAmount.toString());
+        claimTokenAmount = await this.cryptoShibaNFT.getClaimTokenAmount(admin);
+        console.log('admin - claimTokenAmount: ', claimTokenAmount.toString());
 
         // result = await this.cryptoShibaController.fight(tokenId, alice, 0, true);
 

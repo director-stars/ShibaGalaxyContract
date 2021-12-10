@@ -62,15 +62,15 @@ contract CryptoShibaController is Ownable{
     event Fight(uint256 _tokenId, uint256 _totalRewardAmount, uint256 _totalRewardExp, uint256 _winNumber, uint256 _fightNumber);
 
     constructor (){
-        // token = address(0x4A8D2D2ee71c65bC837997e79a45ee9bbd360d45);
-        // busdTokenAddress = address(0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56);
-        // IUniswapV2Router02 _uniswapV2Router = IUniswapV2Router02(0x10ED43C718714eb63d5aA57B78B54704E256024E); // Pancakeswap Router
-        token = address(0x4E01A14cfA1ae3C5e0507e126d9057E6f7979CaF);
-        cryptoShibaNFT = address(0xcF9ec47ED36CBB83eD2eBf632b9aA5b68efa054c);
-        busdTokenAddress = address(0xD1caDD2c2909351f37c8E75d66cC07deb3021601);
-        _uniswapV2Router = IUniswapV2Router02(0xf946634f04aa0eD1b935C8B876a0FD535F993D43); // Pancakeswap Router
+        token = address(0x7420d2Bc1f8efB491D67Ee860DF1D35fe49ffb8C);
+        busdTokenAddress = address(0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56);
+        _uniswapV2Router = IUniswapV2Router02(0x10ED43C718714eb63d5aA57B78B54704E256024E); // Pancakeswap Router
+        // token = address(0x4E01A14cfA1ae3C5e0507e126d9057E6f7979CaF);
+        // cryptoShibaNFT = address(0xcF9ec47ED36CBB83eD2eBf632b9aA5b68efa054c);
+        // busdTokenAddress = address(0xD1caDD2c2909351f37c8E75d66cC07deb3021601);
+        // _uniswapV2Router = IUniswapV2Router02(0xf946634f04aa0eD1b935C8B876a0FD535F993D43); // Pancakeswap Router
 
-        claimTimeCycle = 85400;
+        claimTimeCycle = 86400;
         claimPrice = 1000;
         classes[0] = 6;
         classes[1] = 6;
@@ -83,7 +83,7 @@ contract CryptoShibaController is Ownable{
             _hp: 200, 
             _successRate: 80, 
             _rewardTokenFrom: 60000, 
-            _rewardTokenTo: 70000, 
+            _rewardTokenTo: 70000,
             _rewardExpFrom: 2, 
             _rewardExpTo: 2});
         monsters[1] = Monster({
@@ -180,13 +180,13 @@ contract CryptoShibaController is Ownable{
         uint256 rare = myshiba.getRare(_tokenId);
         
         fightRandNonce++;
-        uint256 fightRandResult = uint256(keccak256(abi.encodePacked(block.timestamp, _msgSender(), fightRandNonce))) % 100;
+        uint256 fightRandResult = uint256(keccak256(abi.encodePacked(block.timestamp, _msgSender(), fightRandNonce)));
         uint256 _rewardTokenAmount = 0;
         uint256 _rewardExp = 0;
 
         uint256 updatedAttackVictoryProbability = monsters[monsterId]._successRate + (100 - monsters[monsterId]._successRate) * level * rare / 6 / 6 / 2;
         uint256 newAmount = 0;
-        if(fightRandResult < updatedAttackVictoryProbability){
+        if(fightRandResult % 100 < updatedAttackVictoryProbability){
             _rewardTokenAmount = monsters[monsterId]._rewardTokenFrom + (fightRandResult % (monsters[monsterId]._rewardTokenTo - monsters[monsterId]._rewardTokenFrom + 1));
             _rewardExp = monsters[monsterId]._rewardExpFrom + (fightRandResult % (monsters[monsterId]._rewardExpTo - monsters[monsterId]._rewardExpFrom + 1));
             newAmount = myshiba.getClaimTokenAmount(_owner) + (_rewardTokenAmount * 10 ** 9);
@@ -198,16 +198,13 @@ contract CryptoShibaController is Ownable{
         else{
             emit Fight(_tokenId, _rewardTokenAmount, _rewardExp, 0, 1);
         }
-        // if(_final){
-            battleTime[_tokenId] = block.timestamp;
-        // }
+        battleTime[_tokenId] = block.timestamp;
     }
 
     function claimToken() public{
         require(nextClaimTime[_msgSender()] < block.timestamp, "not claim now");
         ICryptoShibaNFT myshiba = ICryptoShibaNFT(cryptoShibaNFT);        
         uint256 nftBalance = myshiba.balanceOf(_msgSender());
-        // uint256 maxClaimAmount = claimPrice.mul(1e18).div(priceCheck(token, busdTokenAddress, 1e18)).div(10**claimPriceDecimal).mul(nftBalance);
         uint256 maxClaimAmount = priceCheck(busdTokenAddress, token, 1e18 * claimPrice / (10**claimPriceDecimal)).mul(nftBalance);
         uint256 amount = (myshiba.getClaimTokenAmount(_msgSender()) > maxClaimAmount)? maxClaimAmount : myshiba.getClaimTokenAmount(_msgSender());
         require(IERC20(token).balanceOf(address(this)) > amount, "ended claim token");

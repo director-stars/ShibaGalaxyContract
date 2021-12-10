@@ -172,10 +172,10 @@ contract MagicStoneController is Ownable{
         uint256 updatedAttackVictoryProbability = 0;
         for(i = 0 ; i < fightNumber; i ++){
             fightRandNonce ++;
-            fightRandResult = uint256(keccak256(abi.encodePacked(block.timestamp, _msgSender(), fightRandNonce))) % 100;
+            fightRandResult = uint256(keccak256(abi.encodePacked(block.timestamp, _msgSender(), fightRandNonce)));
             updatedAttackVictoryProbability = monster._successRate + (100 - monster._successRate) * level * rare / 6 / 6 / 2;
 
-            if(fightRandResult < updatedAttackVictoryProbability){
+            if(fightRandResult % 100 < updatedAttackVictoryProbability){
                 totalRewardAmount += monster._rewardTokenFrom + (fightRandResult % (monster._rewardTokenTo - monster._rewardTokenFrom + 1));
                 totalRewardExp += monster._rewardExpFrom + (fightRandResult % (monster._rewardExpTo - monster._rewardExpFrom + 1));
                 winNumber ++;                
