@@ -9,7 +9,7 @@ CryptoShibaNFT=0x2C8fc2e5D27b6d4e59666CF83035d41bD5088fc5
 MagicStoneNFT=0xDCc1b7F2bA315BbA6A454a66097825e54527D368
 
 CryptoShibaController=0x32E25d41Fbb3BBB3751D624C0C949d8e67F2a41E
-MagicStoneController=0x3a10F2f5fC73558fAD8270f3313B4052cCaDF09E
+MagicStoneController=0x72947c9b47cdDf124D67A6a99CEd835cd43b7178
 MarketController=0x39a4993F40d1250456d73E27898E4BDcEbaB309B
 
 
@@ -31,9 +31,9 @@ MagicStoneController=0xC467B57d505537D69C0b9b6cE69878eb16C8d468
 
 
 mainnet fork
-ganache-cli -f https://bsc.getblock.io/mainnet/?api_key=3c0eb929-72ad-46e3-8c37-fab3d4587e64 -m "hidden moral pulp timber famous opinion melt any praise keen tissue aware" -l 100000000 -i 1 -u 0x7420d2Bc1f8efB491D67Ee860DF1D35fe49ffb8C -u 0x7E4228B666f2572259A0fc3061f396D9BBE2A99D --allowUnlimitedContractSize
+ganache-cli -f https://bsc.getblock.io/mainnet/?api_key=3c0eb929-72ad-46e3-8c37-fab3d4587e64 -m "hidden moral pulp timber famous opinion melt any praise keen tissue aware" -l 100000000 -i 1 -u 0x7420d2Bc1f8efB491D67Ee860DF1D35fe49ffb8C -u 0x67926b0C4753c42b31289C035F8A656D800cD9e7 --allowUnlimitedContractSize
 
-ganache-cli -f https://bsc-dataseed.binance.org -m "hidden moral pulp timber famous opinion melt any praise keen tissue aware" -l 100000000 -i 1 -u 0x7420d2Bc1f8efB491D67Ee860DF1D35fe49ffb8C -u 0x7E4228B666f2572259A0fc3061f396D9BBE2A99D --allowUnlimitedContractSize
+ganache-cli -f https://bsc-dataseed.binance.org -m "hidden moral pulp timber famous opinion melt any praise keen tissue aware" -l 100000000 -i 1 -u 0x7420d2Bc1f8efB491D67Ee860DF1D35fe49ffb8C -u 0x67926b0C4753c42b31289C035F8A656D800cD9e7 --allowUnlimitedContractSize
 
 
 

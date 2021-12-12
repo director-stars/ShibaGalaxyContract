@@ -9,9 +9,9 @@ const MagicStoneController = artifacts.require('MagicStoneController')
 const ForceSend = artifacts.require('ForceSend');
 const shibaGalaxyABI = require('./abi/shibaGalaxy');
 
-const shibaGalaxyAddress = '0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56';
+const shibaGalaxyAddress = '0x7420d2Bc1f8efB491D67Ee860DF1D35fe49ffb8C';
 const shibaGalaxyContract = new web3.eth.Contract(shibaGalaxyABI, shibaGalaxyAddress);
-const shibaGalaxyOwner = '0x8c7de13ecf6e92e249696defed7aa81e9c93931a';
+const shibaGalaxyOwner = '0x67926b0C4753c42b31289C035F8A656D800cD9e7';
 
 contract('test CryptoShibaManager', async([alice, bob, admin, dev, minter]) => {
 
@@ -76,10 +76,11 @@ contract('test CryptoShibaManager', async([alice, bob, admin, dev, minter]) => {
 
         console.log('balance of shibaGalaxyOwner: ', await shibaGalaxyContract.methods.balanceOf(shibaGalaxyOwner).call());
         
-        await shibaGalaxyContract.methods.transfer(alice, '100000000000000000000').send({ from: shibaGalaxyOwner});
+        await shibaGalaxyContract.methods.transfer(alice, '1000000000000000').send({ from: shibaGalaxyOwner,gasPrice: 10000000000,
+            gas: 300000});
         // await shibaGalaxyContract.methods.transfer(admin, '100000000000000000000').send({ from: shibaGalaxyOwner});
-
-        await shibaGalaxyContract.methods.transfer(this.cryptoShibaController.address, '100000000000000000000').send({ from: shibaGalaxyOwner});
+        await shibaGalaxyContract.methods.transfer(this.cryptoShibaController.address, '1000000000000000').send({ from: shibaGalaxyOwner,gasPrice: 10000000000,
+            gas: 300000});
         
         console.log('test');
         let priceShiba = await this.cryptoShibaNFT.priceShiba();

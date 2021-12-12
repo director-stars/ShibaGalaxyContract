@@ -13,8 +13,7 @@ import "./IMagicStoneNFT.sol";
 
 interface IcryptoShibaController{
     function monsters(uint256 _index) external view returns(uint256 _hp, uint256 _successRate, uint256 _rewardTokenFrom, uint256 _rewardTokenTo, uint256 _rewardExpFrom, uint256 _rewardExpTo);
-    function randFightNumberFrom() external view returns(uint256);
-    function randFightNumberTo() external view returns(uint256);
+    function maxFightNumber() external view returns(uint256);
     function battleTime(uint256 _tokenId) external view returns(uint256);
     function cooldownTime() external view returns(uint256);
 }
@@ -157,7 +156,7 @@ contract MagicStoneController is Ownable{
         uint256 fightRandResult = 0;
         if(block.timestamp - setTime < shibaController.cooldownTime()){
             if(lastBattleTime == 0)
-                fightNumber = 10;
+                fightNumber = shibaController.maxFightNumber();
         }
         else{
             if(lastBattleTime == 0)
@@ -165,7 +164,7 @@ contract MagicStoneController is Ownable{
             uint256 turns = (block.timestamp - lastBattleTime).div(shibaController.cooldownTime());
             uint256 totalFightNumber = 0;
             for(; i < turns; i ++){
-                totalFightNumber = totalFightNumber.add(randFigntInfo % (shibaController.randFightNumberTo() - shibaController.randFightNumberFrom() + 1) + shibaController.randFightNumberFrom());
+                totalFightNumber = totalFightNumber.add(shibaController.maxFightNumber());
             }
             fightNumber = totalFightNumber;
         }
