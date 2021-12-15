@@ -93,7 +93,12 @@ contract MagicStoneController is Ownable{
         IMagicStoneNFT stoneNFT = IMagicStoneNFT(magicStoneNFT);
         require(shibaNFT.ownerOf(_shibaId) == _msgSender(), 'not owner of shiba');
         require(stoneNFT.ownerOf(_stoneId) == _msgSender(), 'not owner of stone');
-        require(stoneShibaInfo[_stoneId] == 0, 'already set stone');
+        // require(stoneShibaInfo[_stoneId] == 0, 'already set stone');
+        uint256 currentSetShibaId = stoneShibaInfo[_stoneId];
+        stoneShibaInfo[_stoneId] = 0;
+        shibaStoneInfo[currentSetShibaId] = 0;
+        setStoneTime[_stoneId] = 0;
+
         shibaStoneInfo[_shibaId] = _stoneId;
         setStoneTime[_stoneId] = block.timestamp;
         autoFightMonsterInfo[_stoneId] = _monsterId;
@@ -112,9 +117,11 @@ contract MagicStoneController is Ownable{
 
     function getAutoFightResults(uint256 _shibaId) public {
         ICryptoShibaNFT shibaNFT = ICryptoShibaNFT(cryptoShibaNFT);
+        IMagicStoneNFT stoneNFT = IMagicStoneNFT(magicStoneNFT);
         uint256 _stoneId = shibaStoneInfo[_shibaId];
         uint256 setTime = setStoneTime[_stoneId];
         require(shibaNFT.ownerOf(_shibaId) == _msgSender(), 'not owner of shiba');
+        require(stoneNFT.ownerOf(_stoneId) == _msgSender(), 'not set autoFight');
         require(setTime != 0, 'not set autoFight');
     
         (uint256 fightNumber, uint256 winNumber, uint256 totalRewardAmount, uint256 totalRewardExp) = battleResult(_shibaId);
@@ -152,7 +159,6 @@ contract MagicStoneController is Ownable{
         uint256 i = 0;
         uint256 level = shibaNFT.shibaLevel(_shibaId);
         uint256 rare = shibaNFT.getRare(_shibaId);
-        uint256 randFigntInfo = uint256(keccak256(abi.encodePacked(block.timestamp, _msgSender(), shibaNFT.balanceOf(_msgSender()))));
         uint256 fightRandResult = 0;
         if(block.timestamp - setTime < shibaController.cooldownTime()){
             if(lastBattleTime == 0)

@@ -62,6 +62,8 @@ contract('test CryptoShibaManager', async([alice, bob, admin, dev, minter]) => {
 
         await this.marketController.setCryptoShibaNFT(this.cryptoShibaNFT.address);
         await this.marketController.setCryptoShibaController(this.cryptoShibaController.address);
+        await this.marketController.setMagicStoneNFT(this.magicStoneNFT.address);
+        await this.marketController.setMagicStoneController(this.magicStoneController.address);
 
         await this.cryptoShibaManager.addEvolvers(this.magicStoneController.address);
         await this.cryptoShibaManager.addBattlefields(this.magicStoneController.address);
@@ -150,12 +152,13 @@ contract('test CryptoShibaManager', async([alice, bob, admin, dev, minter]) => {
 
         await this.magicStoneController.setAutoFight(tokenId, 1, 0, { from : alice});
 
-        await time.increase(time.duration.days(1));
+        // await time.increase(time.duration.days(1));
 
         result = await this.magicStoneController.getAutoFightResults(tokenId, {from: alice});
         console.log(result.logs[0].args);
 
         // result = await this.cryptoShibaNFT.fillOrder(tokenId, bob, {from: admin});
-        console.log('////////////////////////');
+        console.log('////////////////////////MarketController///////////////////////');
+        console.log(await this.marketController.getStoneByOwner({from: alice}));
     })
 })

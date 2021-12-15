@@ -46,6 +46,7 @@ contract MarketController is Ownable{
     struct Stone{
         uint256 _tokenId;
         uint256 _shibaId;
+        address _shibaOwner;
     }
 
     address public cryptoShibaNFT;
@@ -99,10 +100,14 @@ contract MarketController is Ownable{
                 shibas[i]._owner = ICryptoShibaNFT(cryptoShibaNFT).ownerOf(ids[i]);
             shibas[i]._salePrice = price;
             shibas[i]._stoneInfo = IMagicStoneController(magicStoneController).shibaStoneInfo(ids[i]);
-            if(shibas[i]._stoneInfo == 0)
-                shibas[i]._battleTime = ICryptoShibaController(cryptoShibaController).battleTime(shibas[i]._tokenId);
-            else
-                shibas[i]._battleTime = IMagicStoneController(magicStoneController).battleTime(shibas[i]._tokenId);
+
+            shibas[i]._battleTime = ICryptoShibaController(cryptoShibaController).battleTime(shibas[i]._tokenId);
+            if(shibas[i]._stoneInfo != 0){
+                if(shibas[i]._owner != IMagicStoneNFT(magicStoneNFT).ownerOf(shibas[i]._stoneInfo))
+                    shibas[i]._stoneInfo = 0;
+                else
+                    shibas[i]._battleTime = IMagicStoneController(magicStoneController).battleTime(shibas[i]._tokenId);
+            }
             shibas[i]._fightNumber = ICryptoShibaController(cryptoShibaController).availableFightNumber(shibas[i]._tokenId);
             
         }
@@ -145,6 +150,10 @@ contract MarketController is Ownable{
         for(uint256 i = 0; i < totalStones; i ++){
             stones[i]._tokenId = ids[i];
             stones[i]._shibaId = IMagicStoneController(magicStoneController).stoneShibaInfo(ids[i]);
+            if(stones[i]._shibaId == 0)
+                stones[i]._shibaOwner = address(0);
+            else
+                stones[i]._shibaOwner = ICryptoShibaNFT(cryptoShibaNFT).ownerOf(stones[i]._shibaId);
         }
         return stones;
     }
