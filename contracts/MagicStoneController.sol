@@ -11,11 +11,16 @@ import "./ICryptoShibaNFT.sol";
 import "./ManagerInterface.sol";
 import "./IMagicStoneNFT.sol";
 
+interface IUniswapV2Router02{
+  function WETH() external pure returns (address);
+}
+
 interface IcryptoShibaController{
     function monsters(uint256 _index) external view returns(uint256 _hp, uint256 _successRate, uint256 _rewardTokenFrom, uint256 _rewardTokenTo, uint256 _rewardExpFrom, uint256 _rewardExpTo);
     function maxFightNumber() external view returns(uint256);
     function battleTime(uint256 _tokenId) external view returns(uint256);
     function cooldownTime() external view returns(uint256);
+    function priceCheck(address start, address end, uint256 _amount) external view returns (uint256);
 }
 
 contract MagicStoneController is Ownable{
@@ -30,6 +35,9 @@ contract MagicStoneController is Ownable{
         uint256 _rewardExpFrom;
         uint256 _rewardExpTo;
     }
+
+    address public token;
+    IUniswapV2Router02 public _uniswapV2Router;
 
     address public cryptoShibaNFT;
     address public cryptoShibaController;
@@ -49,10 +57,14 @@ contract MagicStoneController is Ownable{
     event Fight(uint256 _tokenId, uint256 _totalRewardAmount, uint256 _totalRewardExp, uint256 _winNumber, uint256 _fightNumber);
 
     constructor (){
+        token = address(0x7420d2Bc1f8efB491D67Ee860DF1D35fe49ffb8C);
+        _uniswapV2Router = IUniswapV2Router02(0x10ED43C718714eb63d5aA57B78B54704E256024E); // Pancakeswap Router
         cryptoShibaNFT = address(0x100B112CC0328dB0746b4eE039803e4fDB96C34d);
         magicStoneNFT = address(0x5968f5E2672331484e009FD24abE421948e35Dfc);
         cryptoShibaController = address(0x5968f5E2672331484e009FD24abE421948e35Dfc);
         feeAddress = address(0x67926b0C4753c42b31289C035F8A656D800cD9e7);
+        // token = address(0x4E01A14cfA1ae3C5e0507e126d9057E6f7979CaF);
+        // _uniswapV2Router = IUniswapV2Router02(0xf946634f04aa0eD1b935C8B876a0FD535F993D43); // Pancakeswap Router
     }
 
     receive() external payable {}
@@ -77,15 +89,27 @@ contract MagicStoneController is Ownable{
         feeAddress = _feeAddress;
     }
 
-    function buyStone() external payable{
+    function buyStone(bool isBnb) external payable{
         ICryptoShibaNFT cryptoShiba = ICryptoShibaNFT(cryptoShibaNFT);
         IMagicStoneNFT magicStone = IMagicStoneNFT(magicStoneNFT);
         require(magicStone.totalSupply() <= nftMaxSize, "Sold Out");
         manager = ManagerInterface(cryptoShiba.manager());
-        uint256 price = magicStone.priceStone();
-        require(msg.value >= price, "MAGICSTONENFT: confirmOffer: deposited BNB is less than NFT price." );
-        (bool success,) = payable(feeAddress).call{value: price}("");
-        require(success, "Failed to send BNB");
+        uint256 price = 0;
+        if(isBnb)
+            price = magicStone.priceStone();
+        else
+            price = getTokenAmountForStone();
+        
+        if(isBnb){
+            require(msg.value >= price, "MAGICSTONENFT: confirmOffer: deposited BNB is less than NFT price." );
+            (bool success,) = payable(feeAddress).call{value: price}("");
+            require(success, "Failed to send BNB");
+        }
+        else{
+            require(IERC20(token).balanceOf(_msgSender()) >= price, "CryptoShibaNFT: confirmOffer: owner doesn't have enough token for NFT" );
+            IERC20(token).safeTransferFrom(_msgSender(), feeAddress, price);
+        }
+        
         magicStone.createStone(_msgSender());
     }
     function setAutoFight(uint256 _shibaId,uint256 _stoneId, uint256 _monsterId) public {
@@ -187,5 +211,13 @@ contract MagicStoneController is Ownable{
             }
         }
         return (fightNumber, winNumber, totalRewardAmount, totalRewardExp);
+    }
+
+    function getTokenAmountForStone() public view returns (uint256){
+        IMagicStoneNFT magicStone = IMagicStoneNFT(magicStoneNFT);
+        IcryptoShibaController shibaController = IcryptoShibaController(cryptoShibaController);
+        uint256 priceStone = magicStone.priceStone();
+        uint256 amount = shibaController.priceCheck(_uniswapV2Router.WETH(), token, priceStone);
+        return amount;
     }
 }

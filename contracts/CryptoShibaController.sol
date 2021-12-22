@@ -33,13 +33,7 @@ contract CryptoShibaController is Ownable{
     IUniswapV2Router02 public _uniswapV2Router;
     address public busdTokenAddress;
 
-    // mapping (uint256 => uint256) private classInfo;
     uint256[6] public classes;
-    uint256 public uncommonEstate;
-    uint256 public rareEstate;
-    uint256 public superRareEstate;
-    uint256 public epicEstate;
-    uint256 public legendaryEstate;
     ManagerInterface manager;
     event DNASet(uint256 _tokenId, uint256 _dna);
 
@@ -49,16 +43,12 @@ contract CryptoShibaController is Ownable{
 
     mapping (uint256 => uint256) public battleTime;
 
-    // uint256 public randFightNumberFrom = 5;
-    // uint256 public randFightNumberTo = 10;
     uint256 public claimPrice;
     uint256 public claimPriceDecimal = 2;
     uint256 public claimTimeCycle;
-    // mapping (uint256 => uint256) public autoFightMonsterInfo;
     mapping (address => uint256) public nextClaimTime;
     uint256 public maxFightNumber = 3;
     mapping (uint256 => uint256) public availableFightNumber;
-    // event SetAutoFight(uint256 _tokenId, uint256 _monsterId);
     event Fight(uint256 _tokenId, uint256 _totalRewardAmount, uint256 _totalRewardExp, uint256 _winNumber, uint256 _fightNumber);
 
     constructor (){
@@ -115,29 +105,44 @@ contract CryptoShibaController is Ownable{
         cryptoShibaNFT = _nftAddress;
     }
 
-    function buyShiba(uint8[] memory tribe, address referral) external payable {
+    function buyShiba(uint8[] memory tribe, address referral, bool isBnb) external payable {
         ICryptoShibaNFT cryptoShiba = ICryptoShibaNFT(cryptoShibaNFT);
         manager = ManagerInterface(cryptoShiba.manager());
         require(cryptoShiba.totalSupply() <= manager.nftMaxSize(), "Sold Out");
         require(cryptoShiba.balanceOf(_msgSender()).add(cryptoShiba.orders(_msgSender())).add(tribe.length) <= manager.ownableMaxSize(), "already have enough");
-        uint256 totalPriceShiba = cryptoShiba.priceShiba().mul(tribe.length);
+        uint256 totalPriceShiba = 0;
+        if(isBnb)
+            totalPriceShiba = cryptoShiba.priceShiba().mul(tribe.length);
+        else
+            totalPriceShiba = getTokenAmountForShiba().mul(tribe.length);
         uint256 firstPurchaseTime = cryptoShiba.firstPurchaseTime(_msgSender());
         uint256 referralRate = manager.referralRate();
         uint256 referralRatePercent = manager.referralRatePercent();
         uint256 referralReward = 0;
 
-        require(msg.value >= totalPriceShiba, "MAGICSTONENFT: confirmOffer: deposited BNB is less than NFT price." );
+        if(isBnb)
+            require(msg.value >= totalPriceShiba, "CryptoShibaNFT: confirmOffer: deposited BNB is less than NFT price." );
+        else
+            require(IERC20(token).balanceOf(_msgSender()) >= totalPriceShiba, "CryptoShibaNFT: confirmOffer: owner doesn't have enough token for NFT" );
 
         if(firstPurchaseTime == 0 && referral != address(0)){
             cryptoShiba.setFirstPurchaseTime(_msgSender(), block.timestamp);
             referralReward = totalPriceShiba.mul(referralRate).div(referralRatePercent);
-            (bool success,) = payable(referral).call{value: referralReward}("");
-            require(success, "Failed to send BNB");
-            // IERC20(token).safeTransferFrom(_msgSender(), referral, referralReward);
+            if(isBnb){
+                (bool success,) = payable(referral).call{value: referralReward}("");
+                require(success, "Failed to send BNB");
+            }
+            else{
+                IERC20(token).safeTransferFrom(_msgSender(), referral, referralReward);
+            }
         }
-        (bool success,) = payable(manager.feeAddress()).call{value: totalPriceShiba.sub(referralReward)}("");
-        require(success, "Failed to send BNB");
-        // IERC20(token).safeTransferFrom(_msgSender(), manager.feeAddress(), totalPriceShiba.sub(referralReward));
+        if(isBnb){
+            (bool success,) = payable(manager.feeAddress()).call{value: totalPriceShiba.sub(referralReward)}("");
+            require(success, "Failed to send BNB");
+        }
+        else{
+            IERC20(token).safeTransferFrom(_msgSender(), manager.feeAddress(), totalPriceShiba.sub(referralReward));
+        }
         
         cryptoShiba.layShiba(_msgSender(), tribe);
         uint256 lastTokenId = cryptoShiba.tokenOfOwnerByIndex(_msgSender(), cryptoShiba.balanceOf(_msgSender()).sub(1));
@@ -203,7 +208,7 @@ contract CryptoShibaController is Ownable{
 
     function claimToken() public{
         require(nextClaimTime[_msgSender()] < block.timestamp, "not claim now");
-        ICryptoShibaNFT myshiba = ICryptoShibaNFT(cryptoShibaNFT);        
+        ICryptoShibaNFT myshiba = ICryptoShibaNFT(cryptoShibaNFT);  
         uint256 nftBalance = myshiba.balanceOf(_msgSender());
         uint256 maxClaimAmount = priceCheck(busdTokenAddress, token, 1e18 * claimPrice / (10**claimPriceDecimal)).mul(nftBalance);
         uint256 amount = (myshiba.getClaimTokenAmount(_msgSender()) > maxClaimAmount)? maxClaimAmount : myshiba.getClaimTokenAmount(_msgSender());
@@ -270,5 +275,12 @@ contract CryptoShibaController is Ownable{
 
     function setMaxFightNumber(uint256 _maxFightNumber) public onlyOwner {
         maxFightNumber = _maxFightNumber;
+    }
+
+    function getTokenAmountForShiba() public view returns (uint256){
+        ICryptoShibaNFT cryptoShiba = ICryptoShibaNFT(cryptoShibaNFT);
+        uint256 priceShiba = cryptoShiba.priceShiba();
+        uint256 amount = priceCheck(_uniswapV2Router.WETH(), token, priceShiba);
+        return amount;
     }
 }

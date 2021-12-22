@@ -11,13 +11,7 @@ interface ManagerInterface {
 
     function farmOwners(address _address) external view returns (bool);
 
-    // function timesBattle(uint256 level) external view returns (uint256);
-
-    // function timeLimitBattle() external view returns (uint256);
-
     function generation() external view returns (uint256);
-
-    // function xBattle() external view returns (uint256);
 
     function priceShiba() external view returns (uint256);
 
@@ -28,8 +22,6 @@ interface ManagerInterface {
     function feeChangeTribe() external view returns (uint256);
 
     function feeMarketRate() external view returns (uint256);
-
-    // function loseRate() external view returns (uint256);
 
     function feeEvolve() external view returns (uint256);
 
