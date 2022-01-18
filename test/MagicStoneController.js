@@ -93,7 +93,7 @@ contract('test CryptoShibaManager', async([alice, bob, admin, dev, minter]) => {
         // console.log(this.cryptoShibaController.address)
         await shibaGalaxyContract.methods.approve(this.cryptoShibaController.address, priceShiba).send({ from : alice});
         // let Shiba = await this.cryptoShibaController.buyShiba([tribe], bob, { from : alice });
-        await this.cryptoShibaController.buyShiba([tribe], bob, {from: alice, value: priceShiba});
+        await this.cryptoShibaController.buyShiba([tribe], bob, true, {from: alice, value: priceShiba});
         // await shibaGalaxyContract.methods.approve(this.cryptoShibaController.address, priceShiba).send({ from : admin});
         // await this.cryptoShibaController.buyShiba([tribe], bob, { from : admin });
         // console.log(Shiba.logs[0].args);

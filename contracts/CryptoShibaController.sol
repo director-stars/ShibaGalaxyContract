@@ -62,10 +62,10 @@ contract CryptoShibaController is Ownable{
 
         claimTimeCycle = 86400;
         claimPrice = 1000;
-        classes[0] = 6;
-        classes[1] = 6;
-        classes[2] = 6;
-        classes[3] = 6;
+        classes[0] = 17;
+        classes[1] = 10;
+        classes[2] = 7;
+        classes[3] = 7;
         classes[4] = 5;
         classes[5] = 5;
 

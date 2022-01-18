@@ -59,12 +59,10 @@ contract MagicStoneController is Ownable{
     constructor (){
         token = address(0x7420d2Bc1f8efB491D67Ee860DF1D35fe49ffb8C);
         _uniswapV2Router = IUniswapV2Router02(0x10ED43C718714eb63d5aA57B78B54704E256024E); // Pancakeswap Router
-        cryptoShibaNFT = address(0x100B112CC0328dB0746b4eE039803e4fDB96C34d);
-        magicStoneNFT = address(0x5968f5E2672331484e009FD24abE421948e35Dfc);
-        cryptoShibaController = address(0x5968f5E2672331484e009FD24abE421948e35Dfc);
-        feeAddress = address(0x67926b0C4753c42b31289C035F8A656D800cD9e7);
-        // token = address(0x4E01A14cfA1ae3C5e0507e126d9057E6f7979CaF);
-        // _uniswapV2Router = IUniswapV2Router02(0xf946634f04aa0eD1b935C8B876a0FD535F993D43); // Pancakeswap Router
+        cryptoShibaNFT = address(0x5E33FB9f02E445533308aBE005B7e270FDd79CD8);
+        magicStoneNFT = address(0xC6E6BE483bC1048c05DFE3d7Ed03455BF067b348);
+        cryptoShibaController = address(0xa3F7CDEa4E7F8B0F97d33Be6d8Fc84842fc556ce);
+        feeAddress = address(0xD8E92ef99da5874B7B30ba24722871CB799c045E);
     }
 
     receive() external payable {}
@@ -95,20 +93,10 @@ contract MagicStoneController is Ownable{
         require(magicStone.totalSupply() <= nftMaxSize, "Sold Out");
         manager = ManagerInterface(cryptoShiba.manager());
         uint256 price = 0;
-        if(isBnb)
-            price = magicStone.priceStone();
-        else
-            price = getTokenAmountForStone();
-        
-        if(isBnb){
-            require(msg.value >= price, "MAGICSTONENFT: confirmOffer: deposited BNB is less than NFT price." );
-            (bool success,) = payable(feeAddress).call{value: price}("");
-            require(success, "Failed to send BNB");
-        }
-        else{
-            require(IERC20(token).balanceOf(_msgSender()) >= price, "CryptoShibaNFT: confirmOffer: owner doesn't have enough token for NFT" );
-            IERC20(token).safeTransferFrom(_msgSender(), feeAddress, price);
-        }
+        price = magicStone.priceStone();
+        require(msg.value >= price, "MAGICSTONENFT: confirmOffer: deposited BNB is less than NFT price." );
+        (bool success,) = payable(feeAddress).call{value: price}("");
+        require(success, "Failed to send BNB");
         
         magicStone.createStone(_msgSender());
     }
@@ -117,7 +105,6 @@ contract MagicStoneController is Ownable{
         IMagicStoneNFT stoneNFT = IMagicStoneNFT(magicStoneNFT);
         require(shibaNFT.ownerOf(_shibaId) == _msgSender(), 'not owner of shiba');
         require(stoneNFT.ownerOf(_stoneId) == _msgSender(), 'not owner of stone');
-        // require(stoneShibaInfo[_stoneId] == 0, 'already set stone');
         uint256 currentSetShibaId = stoneShibaInfo[_stoneId];
         stoneShibaInfo[_stoneId] = 0;
         shibaStoneInfo[currentSetShibaId] = 0;
