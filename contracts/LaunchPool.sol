@@ -87,12 +87,14 @@ contract LaunchPool is Ownable{
         uint256 i;
         uint256 _oldClaimAmount = 0;
         for(i = 1; i < round; i ++){
-            _oldClaimAmount += tokenAmount[i][_account].mul(distributeAmount[i]).div(totalTokenAmount[i]);
+            if(totalTokenAmount[i] != 0)
+                _oldClaimAmount += tokenAmount[i][_account].mul(distributeAmount[i]).div(totalTokenAmount[i]);
         }
         return _oldClaimAmount;
     }
 
     function endRound() public onlyOwner {
+        require(startTime != 0, "round already ended");
         round ++;
         startTime = 0;
     }

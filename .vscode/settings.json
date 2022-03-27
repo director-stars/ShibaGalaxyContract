@@ -1,0 +1,5 @@
+{
+    "workbench.settings.enableNaturalLanguageSearch": false,
+    "json.schemaDownload.enable": false,
+    "npm.fetchOnlinePackageInfo": false
+}
